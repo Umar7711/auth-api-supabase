@@ -10,5 +10,5 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise ValueError(
         "SUPABASE_URL aur SUPABASE_KEY .env file mein set karo. "
-        ".env.example ko copy karke .env banao aur values daalo."
+        ".env banao aur values daalo."
     )
