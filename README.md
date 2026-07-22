@@ -11,7 +11,7 @@ Email/password authentication with access & refresh tokens, powered by Supabase.
 
 2. **`.env` file banao:**
    ```bash
-   cp .env.example .env
+   .env
    ```
    Fir `.env` file kholo aur `SUPABASE_URL` aur `SUPABASE_KEY` daalo
    (Supabase Dashboard → Settings → API se milega).
