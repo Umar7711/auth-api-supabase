@@ -1,0 +1,126 @@
+from fastapi import APIRouter, HTTPException, Depends, status
+from app.core.supabase_client import supabase
+from app.schemas.auth import (
+    RegisterRequest,
+    LoginRequest,
+    RefreshRequest,
+    AuthResponse,
+    UserResponse,
+)
+from app.dependencies import get_current_user
+
+router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+
+@router.post("/register", response_model=AuthResponse)
+def register(data: RegisterRequest):
+    """
+    Naya user email + password se sign up karta hai.
+    Supabase khud password ko hash karke store karta hai.
+    """
+    try:
+        response = supabase.auth.sign_up(
+            {"email": data.email, "password": data.password}
+        )
+
+        if response.user is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Registration fail hua, dobara try karo",
+            )
+
+        # Agar email confirmation ON hai, session None milega
+        # (user ko pehle email verify karna padega, phir login karna hoga)
+        if response.session is None:
+            raise HTTPException(
+                status_code=status.HTTP_201_CREATED,
+                detail="Account ban gaya. Email verify karke login karo.",
+            )
+
+        return AuthResponse(
+            access_token=response.session.access_token,
+            refresh_token=response.session.refresh_token,
+            user_id=response.user.id,
+            email=response.user.email,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+        )
+
+
+@router.post("/login", response_model=AuthResponse)
+def login(data: LoginRequest):
+    """
+    Existing user email + password se login karta hai.
+    Success pe access_token + refresh_token milta hai.
+    """
+    try:
+        response = supabase.auth.sign_in_with_password(
+            {"email": data.email, "password": data.password}
+        )
+
+        return AuthResponse(
+            access_token=response.session.access_token,
+            refresh_token=response.session.refresh_token,
+            user_id=response.user.id,
+            email=response.user.email,
+        )
+
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email ya password galat hai",
+        )
+
+
+@router.post("/refresh", response_model=AuthResponse)
+def refresh_token(data: RefreshRequest):
+    """
+    Jab access_token expire ho jaye (15 min - 1 hour, Supabase default),
+    is refresh_token ka use karke naya access_token milega
+    bina user ko dobara login kiye.
+    """
+    try:
+        response = supabase.auth.refresh_session(data.refresh_token)
+
+        return AuthResponse(
+            access_token=response.session.access_token,
+            refresh_token=response.session.refresh_token,
+            user_id=response.user.id,
+            email=response.user.email,
+        )
+
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token invalid ya expire ho gaya, dobara login karo",
+        )
+
+
+@router.post("/logout")
+def logout(current_user: dict = Depends(get_current_user)):
+    """
+    User ko logout karta hai — Supabase side pe session revoke ho jata hai.
+    """
+    try:
+        supabase.auth.sign_out()
+        return {"message": "Logout ho gaya"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+        )
+
+
+@router.get("/me", response_model=UserResponse)
+def get_me(current_user: dict = Depends(get_current_user)):
+    """
+    PROTECTED ROUTE - Sirf valid access_token ke saath call ho sakta hai.
+    Yeh route dikhata hai ki authentication kaise kaam karta hai.
+    """
+    return UserResponse(
+        user_id=current_user["user_id"], email=current_user["email"]
+    )
