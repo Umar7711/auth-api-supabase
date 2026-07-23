@@ -136,21 +136,6 @@ def logout(current_user: dict = Depends(get_current_user)):
             status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
         )
 
-
-@router.get("/me", response_model=UserResponse)
-def get_me(current_user: dict = Depends(get_current_user)):
-    """
-    PROTECTED ROUTE - Sirf valid access_token ke saath call ho sakta hai.
-    Yeh route dikhata hai ki authentication kaise kaam karta hai.
-    """
-    return UserResponse(
-        user_id=current_user["user_id"],
-        email=current_user["email"],
-        name=current_user.get("name"),
-        phone=current_user.get("phone"),
-        
-    )
-
 @router.post("/forgot-password")
 def forgot_password(data: ForgotPasswordRequest):
     """
@@ -182,3 +167,18 @@ def reset_password(
         return {"message": "Password successfully change ho gaya"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/me", response_model=UserResponse)
+def get_me(current_user: dict = Depends(get_current_user)):
+    """
+    PROTECTED ROUTE - Sirf valid access_token ke saath call ho sakta hai.
+    Yeh route dikhata hai ki authentication kaise kaam karta hai.
+    """
+    return UserResponse(
+        user_id=current_user["user_id"],
+        email=current_user["email"],
+        name=current_user.get("name"),
+        phone=current_user.get("phone"),
+
+    )
