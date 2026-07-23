@@ -18,7 +18,7 @@ Email/password authentication with access & refresh tokens, powered by Supabase.
 
 3. **Server chalao:**
    ```bash
-   uvicorn main:app --reload
+   python -m uvicorn main:app --reload
    ```
 
 4. **Docs kholo:** browser mein `http://127.0.0.1:8000/docs` — yahan har route ko directly test kar sakte ho.
