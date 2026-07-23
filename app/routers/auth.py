@@ -6,8 +6,11 @@ from app.schemas.auth import (
     RefreshRequest,
     AuthResponse,
     UserResponse,
+    ForgotPasswordRequest,
+    ResetPasswordRequest
 )
-from app.dependencies import get_current_user
+from fastapi.security import HTTPAuthorizationCredentials
+from app.dependencies import get_current_user  , bearer_scheme
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -147,3 +150,35 @@ def get_me(current_user: dict = Depends(get_current_user)):
         phone=current_user.get("phone"),
         
     )
+
+@router.post("/forgot-password")
+def forgot_password(data: ForgotPasswordRequest):
+    """
+    Email pe reset link bhejta hai. Link click karne pe user
+    frontend pe redirect hoga jahan naya password set karega.
+    """
+    try:
+        supabase.auth.reset_password_for_email(
+            data.email,
+            {"redirect_to": "http://localhost:8000/docs"}  # apna frontend URL daalna
+        )
+        return {"message": "Reset link email pe bhej diya gaya"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/reset-password")
+def reset_password(
+    data: ResetPasswordRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+):
+    """
+    Reset link se mile token (URL mein hoga) ko Bearer token ki tarah
+    bhejo, naya password isse set ho jayega.
+    """
+    try:
+        authed_client = get_authed_client(credentials.credentials)
+        authed_client.auth.update_user({"password": data.new_password})
+        return {"message": "Password successfully change ho gaya"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

@@ -33,3 +33,10 @@ class UserResponse(BaseModel):
     email: str
     name: Optional[str] = None
     phone: Optional[str] = None
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    new_password: str
