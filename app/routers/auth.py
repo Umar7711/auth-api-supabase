@@ -19,8 +19,20 @@ def register(data: RegisterRequest):
     Supabase khud password ko hash karke store karta hai.
     """
     try:
+        # name/phone sirf DISPLAY ke liye metadata mein jaayenge -
+        # yeh login credentials nahi hain, sirf record ke roop mein save honge
+        metadata = {}
+        if data.name:
+            metadata["full_name"] = data.name
+        if data.phone:
+            metadata["phone_number"] = data.phone
+        
         response = supabase.auth.sign_up(
-            {"email": data.email, "password": data.password}
+            {
+                "email": data.email,
+                "password": data.password,
+                "options": {"data": metadata} if metadata else {},
+            }
         )
 
         if response.user is None:
@@ -36,12 +48,16 @@ def register(data: RegisterRequest):
                 status_code=status.HTTP_201_CREATED,
                 detail="Account ban gaya. Email verify karke login karo.",
             )
+        user_meta = response.user.user_metadata or {}
+        
 
         return AuthResponse(
             access_token=response.session.access_token,
             refresh_token=response.session.refresh_token,
             user_id=response.user.id,
             email=response.user.email,
+            name=user_meta.get("full_name"),
+            phone=user_meta.get("phone_number"),
         )
 
     except HTTPException:
@@ -68,6 +84,9 @@ def login(data: LoginRequest):
             refresh_token=response.session.refresh_token,
             user_id=response.user.id,
             email=response.user.email,
+            name=user_meta.get("full_name"),
+            phone=user_meta.get("phone_number"),
+            
         )
 
     except Exception:
@@ -122,5 +141,9 @@ def get_me(current_user: dict = Depends(get_current_user)):
     Yeh route dikhata hai ki authentication kaise kaam karta hai.
     """
     return UserResponse(
-        user_id=current_user["user_id"], email=current_user["email"]
+        user_id=current_user["user_id"],
+        email=current_user["email"],
+        name=current_user.get("name"),
+        phone=current_user.get("phone"),
+        
     )

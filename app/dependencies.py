@@ -26,8 +26,13 @@ def get_current_user(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid ya expired token",
             )
+        user_meta = user.user_metadata or {}
 
-        return {"user_id": user.id, "email": user.email}
+        return {"user_id": user.id,
+                "email": user.email,
+                "name": user_meta.get("full_name"),
+                "phone": user_meta.get("phone_number"),
+                }
 
     except Exception:
         raise HTTPException(
