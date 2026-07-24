@@ -13,4 +13,4 @@ app.include_router(auth.router)
 
 @app.get("/")
 def root():
-    return {"message": "Auth API chal raha hai! /docs pe jaake test karo."}
+    return {"message": "Auth API is working! go to /docs and test the auth api!"}
